@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* HAI3 themes */
+@import './styles/themes.css';
+
+/* Token-based base styles */
+@layer base {
+  html[data-theme] body {
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+  }
+}
+
+/* Token utility classes (shadcn-style mapping) */
+@layer components {
+  .ui-bg { background-color: rgb(var(--background)); color: rgb(var(--foreground)); }
+  .ui-fg { color: rgb(var(--foreground)); }
+  .ui-code-fg { color: rgb(var(--code-foreground)); }
+  .ui-card { background-color: rgb(var(--card)); color: rgb(var(--card-foreground)); border-color: rgb(var(--border)); }
+  .ui-muted { background-color: rgb(var(--muted)); color: rgb(var(--muted-foreground)); }
+  .ui-border { border-color: rgb(var(--border)); }
+  .ui-input { background-color: rgb(var(--background)); color: rgb(var(--foreground)); border-color: rgb(var(--input)); }
+  .ui-primary { background-color: rgb(var(--primary)); color: rgb(var(--primary-foreground)); }
+  .ui-secondary { background-color: rgb(var(--secondary)); color: rgb(var(--secondary-foreground)); }
+  .ui-accent { background-color: rgb(var(--accent)); color: rgb(var(--accent-foreground)); }
+  .ui-destructive { background-color: rgb(var(--destructive)); color: rgb(var(--destructive-foreground)); }
+  .ui-ring { box-shadow: 0 0 0 2px rgba(var(--ring), 0.6); }
+}
+
+/* Custom styles for the chat interface */
+@layer components {
+  .prose {
+    @apply leading-relaxed;
+  }
+
+  .prose-sm {
+    @apply text-sm;
+  }
+
+  .prose p {
+    @apply mb-4;
+  }
+
+  .prose pre {
+    @apply bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto;
+  }
+
+  .prose code {
+    @apply bg-gray-100 rounded px-1 py-0.5 text-sm;
+  }
+
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animation for typing indicator */
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Focus styles */
+.focus\:ring-2:focus {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}

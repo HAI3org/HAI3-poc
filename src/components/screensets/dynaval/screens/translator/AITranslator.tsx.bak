@@ -1,0 +1,319 @@
+import React, { useState, useRef, ChangeEvent } from 'react';
+import { Languages, Upload, FileText, File, X, Copy, Check, Type } from 'lucide-react';
+
+type TranslationStyle = 'general' | 'financial' | 'technical' | 'legal' | 'casual' | 'academic';
+
+interface FileInfo {
+  name: string;
+  type: string;
+  size: number;
+  content: string;
+}
+
+const AITranslator: React.FC = () => {
+  const [inputText, setInputText] = useState('');
+  const [outputText, setOutputText] = useState('');
+  const [sourceLanguage, setSourceLanguage] = useState('auto');
+  const [targetLanguage, setTargetLanguage] = useState('en');
+  const [style, setStyle] = useState<TranslationStyle>('general');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<FileInfo | null>(null);
+  const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const languages = [
+    { code: 'auto', name: 'Auto-detect' },
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+  ];
+
+  const styles: { value: TranslationStyle; label: string }[] = [
+    { value: 'general', label: 'General' },
+    { value: 'financial', label: 'Financial' },
+    { value: 'technical', label: 'Technical' },
+    { value: 'legal', label: 'Legal' },
+    { value: 'casual', label: 'Casual' },
+    { value: 'academic', label: 'Academic' },
+  ];
+
+  // Helper function to count words and characters
+  const getTextStats = (text: string) => {
+    const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    return {
+      words,
+      characters: text.length
+    };
+  };
+
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setUploadedFile({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        content,
+      });
+      setInputText(content);
+    };
+    reader.readAsText(file);
+  };
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setInputText('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const translateText = async () => {
+    if (!inputText.trim()) return;
+    
+    setIsTranslating(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real implementation, you would call your translation API here
+      // const response = await translateAPI({
+      //   text: inputText,
+      //   source: sourceLanguage,
+      //   target: targetLanguage,
+      //   style,
+      // });
+      
+      // For demo purposes, we'll just return a mock translation
+      setOutputText(`[${style} translation to ${languages.find(l => l.code === targetLanguage)?.name}]: ${inputText}`);
+    } catch (error) {
+      console.error('Translation error:', error);
+      setOutputText('Error occurred during translation. Please try again.');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (!outputText) return;
+    
+    try {
+      await navigator.clipboard.writeText(outputText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return <FileText className="text-red-500" size={20} />;
+      case 'doc':
+      case 'docx':
+        return <FileText className="text-blue-500" size={20} />;
+      case 'txt':
+        return <Type className="text-gray-500" size={20} />;
+      default:
+        return <File className="text-gray-500" size={20} />;
+    }
+  };
+
+  const inputStats = getTextStats(inputText);
+  const outputStats = getTextStats(outputText);
+
+  return (
+    <div className="flex flex-col h-full p-4 max-w-4xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Languages className="text-blue-500" size={24} />
+          AI Translator
+        </h1>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Input Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">
+              Source Text
+            </label>
+            <div className="flex items-center gap-2">
+              <select
+                value={sourceLanguage}
+                onChange={(e) => setSourceLanguage(e.target.value)}
+                className="text-xs border rounded px-2 py-1"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-full hover:bg-gray-100"
+                title="Upload file"
+              >
+                <Upload size={16} />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".txt,.pdf,.doc,.docx,.md"
+                className="hidden"
+              />
+            </div>
+          </div>
+          
+          {uploadedFile ? (
+            <div className="border rounded-lg p-3 bg-gray-50">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {getFileIcon(uploadedFile.name)}
+                  <span className="text-sm font-medium truncate max-w-[200px]">
+                    {uploadedFile.name}
+                  </span>
+                </div>
+                <button
+                  onClick={removeFile}
+                  className="text-gray-400 hover:text-gray-600"
+                  title="Remove file"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="text-xs text-gray-500">
+                {Math.round(uploadedFile.size / 1024)} KB • {uploadedFile.type}
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Enter text to translate or upload a file"
+                className="w-full h-64 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {inputText && (
+                <button
+                  onClick={() => setInputText('')}
+                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+          )}
+          <div className="text-xs text-gray-500 flex justify-between">
+            <span>{inputStats.words} words</span>
+            <span>{inputStats.characters} characters</span>
+          </div>
+        </div>
+
+        {/* Output Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">
+              Translation
+            </label>
+            <div className="flex items-center gap-2">
+              <select
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                className="text-xs border rounded px-2 py-1"
+              >
+                {languages.filter(lang => lang.code !== 'auto').map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+              <div className="relative">
+                <select
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value as TranslationStyle)}
+                  className="text-xs border rounded px-2 py-1 appearance-none pr-6"
+                >
+                  {styles.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-1 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="relative">
+            <div className="border rounded-lg p-3 h-64 bg-gray-50 overflow-auto">
+              {isTranslating ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-pulse flex flex-col items-center">
+                    <div className="h-2 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ) : outputText ? (
+                <div className="whitespace-pre-wrap">{outputText}</div>
+              ) : (
+                <div className="text-gray-400 h-full flex items-center justify-center">
+                  Translation will appear here
+                </div>
+              )}
+            </div>
+            {outputText && (
+              <button
+                onClick={copyToClipboard}
+                className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-md hover:bg-gray-100"
+                title={copied ? 'Copied!' : 'Copy to clipboard'}
+              >
+                {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+              </button>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 flex justify-between">
+            <span>{outputStats.words} words</span>
+            <span>{outputStats.characters} characters</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          onClick={translateText}
+          disabled={!inputText.trim() || isTranslating}
+          className={`px-6 py-2 rounded-lg font-medium ${
+            !inputText.trim() || isTranslating
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
+          }`}
+        >
+          {isTranslating ? 'Translating...' : 'Translate'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default AITranslator;
