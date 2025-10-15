@@ -25,6 +25,8 @@ import DraftsChat2ScreenWrapper from './screensets/drafts/screens/chat 2/ChatScr
 import DynavalChatScreenWrapper from './screensets/dynaval/screens/chat/ChatScreenWrapper';
 import DynavalChatHistoryWrapper from './screensets/dynaval/screens/chat/ChatHistoryWrapper';
 import ProgramMenuWrapper from './screensets/dynaval/components/ProgramMenuWrapper';
+import DynavalSidebar from './screensets/dynaval/components/DynavalSidebar';
+import { programConfigs } from './screensets/dynaval/components/DynamicProgramIcons';
 
 
 
@@ -62,6 +64,19 @@ export interface MenuSections {
   top: MenuItem[];
   middle: MenuItem[];
   bottom: MenuItem[];
+}
+
+export interface SidebarRendererProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  leftMenuCollapsed: boolean;
+  showMenuTitles: boolean;
+  onProgramSelect?: (id: string) => void;
+}
+
+export interface SidebarRendererConfig {
+  enabled: boolean;
+  renderer?: (props: SidebarRendererProps) => React.ReactNode;
 }
 
 /**
@@ -267,4 +282,39 @@ export const getMenuItemsBySection = (screensetId: string): MenuSections => {
   };
 
   return sections;
+};
+
+export const getScreensetSidebarRendererConfig = (screensetId: string): SidebarRendererConfig | null => {
+  if (screensetId === 'dynaval') {
+    return {
+      enabled: true,
+      renderer: (props: SidebarRendererProps) => React.createElement(DynavalSidebar, props as any)
+    };
+  }
+  return { enabled: false };
+};
+
+export type MainContentResolver = (
+  activeTab: string,
+  screenProps: Record<string, unknown>,
+  childScreenProps: Record<string, unknown>,
+  children: React.ReactElement
+) => React.ReactElement;
+
+export const getScreensetMainContentResolver = (screensetId: string): MainContentResolver | null => {
+  if (screensetId === 'dynaval') {
+    return (
+      activeTab: string,
+      screenProps: Record<string, unknown>,
+      childScreenProps: Record<string, unknown>,
+      children: React.ReactElement
+    ): React.ReactElement => {
+      const conf = (programConfigs as any)[activeTab];
+      if (conf?.component) {
+        return React.createElement(conf.component, { ...screenProps, ...childScreenProps });
+      }
+      return React.cloneElement(children, { ...screenProps, ...childScreenProps });
+    };
+  }
+  return null;
 };
