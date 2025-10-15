@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Monitor } from 'lucide-react';
-import { getMenuItemsBySection, getScreensetsList, getMenuItemSecondLayerConfig, getScreenseetMenuItems } from '../screensetConfig';
+import { getMenuItemsBySection, getScreensetsList, getMenuItemSecondLayerConfig, getScreenseetMenuItems, getScreensetSidebarRendererConfig, getScreensetMainContentResolver } from '../screensetConfig';
 import { themes, defaultTheme, applyTheme, getStoredTheme, storeTheme, Theme } from '../themeConfig';
-import { programConfigs } from '../screensets/dynaval/components/DynamicProgramIcons';
-import DynavalSidebar from '../screensets/dynaval/components/DynavalSidebar';
 
 // Types for component props
 interface SubtitleConfig {
@@ -101,6 +99,10 @@ const HAI3Core: React.FC<HAI3CoreProps> = ({
   const topMenuItems: MenuItem[] = screensetMenuSections.top || [];
   const middleMenuItems: MenuItem[] = screensetMenuSections.middle || [];
   const bottomMenuItems: MenuItem[] = screensetMenuSections.bottom || [];
+
+  // Screenset-specific sidebar and content resolvers
+  const sidebarRendererConfig = getScreensetSidebarRendererConfig(currentScreenset);
+  const mainContentResolver = getScreensetMainContentResolver(currentScreenset);
 
   // Menu sizing
   const collapsedWidth = 64; // 4rem = 64px
@@ -339,14 +341,14 @@ const HAI3Core: React.FC<HAI3CoreProps> = ({
           {/* Menu Items */}
           <div className="flex-1 flex flex-col justify-between px-2 overflow-y-auto">
             <div className="flex flex-col gap-1">
-              {currentScreenset === 'dynaval' ? (
-                <DynavalSidebar
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  leftMenuCollapsed={leftMenuCollapsed}
-                  showMenuTitles={showMenuTitles}
-                  onProgramSelect={(id: string) => setActiveTab(id)}
-                />
+              {sidebarRendererConfig?.enabled && sidebarRendererConfig.renderer ? (
+                sidebarRendererConfig.renderer({
+                  activeTab,
+                  setActiveTab,
+                  leftMenuCollapsed,
+                  showMenuTitles,
+                  onProgramSelect: (id: string) => setActiveTab(id)
+                })
               ) : (
                 <>
                   {/* Top Section - Core Tools */}
@@ -463,11 +465,9 @@ const HAI3Core: React.FC<HAI3CoreProps> = ({
 
         {/* Screen Content */}
         <div className="flex-1 overflow-hidden" style={{ paddingBottom: '30px' }}>
-          {currentScreenset === 'dynaval' && programConfigs[activeTab] ? (
-            React.createElement(programConfigs[activeTab].component, { ...screenProps, ...childScreenProps })
-          ) : (
-            React.cloneElement(children, { ...screenProps, ...childScreenProps })
-          )}
+          {mainContentResolver
+            ? mainContentResolver(activeTab, screenProps, childScreenProps, children)
+            : React.cloneElement(children, { ...screenProps, ...childScreenProps })}
         </div>
       </div>
 
