@@ -30,7 +30,106 @@ type CommitRecord = {
   locBugfixes: number;
   locFeatures: number;
   locThirdParty: number;
+  locTech?: number;
+  locUnknown?: number;
   qualityScore: number;
+};
+
+type CompType = 'user' | 'team_total' | 'team_avg' | 'department_total' | 'department_avg';
+type CompItemShape = { type: CompType; key: string };
+
+type ChartComparisonAdderProps = {
+  users: string[];
+  teams: string[];
+  departments: string[];
+  excluded: CompItemShape[];
+  onAdd: (item: CompItemShape) => void;
+};
+
+const ChartComparisonAdder: React.FC<ChartComparisonAdderProps> = ({ users, teams, departments, excluded, onAdd }) => {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<CompType>('user');
+  const [query, setQuery] = useState('');
+
+  const excludedSet = useMemo(() => new Set(excluded.map(e => `${e.type}:${e.key}`)), [excluded]);
+
+  const options = useMemo(() => {
+    const list = mode === 'user' ? users : mode.startsWith('team') ? teams : departments;
+    return list
+      .filter(k => !excludedSet.has(`${mode}:${k}`))
+      .filter(k => k.toLowerCase().includes(query.trim().toLowerCase()))
+      .slice(0, 10);
+  }, [mode, users, teams, departments, excludedSet, query]);
+
+  const modes: { t: CompType; label: string }[] = [
+    { t: 'user', label: 'user' },
+    { t: 'team_total', label: 'team (total)' },
+    { t: 'team_avg', label: 'team (avg)' },
+    { t: 'department_total', label: 'department (total)' },
+    { t: 'department_avg', label: 'department (avg)' }
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(prev => !prev)}
+        className="rounded-full border border-dashed border-blue-300 px-3 py-1 text-xs font-medium text-blue-500 hover:border-blue-400 hover:text-blue-600"
+      >
+        + Add
+      </button>
+      {open && (
+        <div className="absolute z-10 mt-2 w-72 rounded-lg border border-gray-200 bg-white shadow-lg">
+          <div className="flex border-b border-gray-100">
+            {modes.map((m) => (
+              <button
+                key={m.t}
+                onClick={() => setMode(m.t)}
+                className={`px-2 py-2 text-xs ${mode === m.t ? 'text-blue-600' : 'text-gray-500'} hover:text-blue-700`}
+              >
+                {m.label}
+              </button>
+            ))}
+            <div className="ml-auto p-2">
+              <button onClick={() => setOpen(false)} className="rounded-full p-1 text-gray-400 hover:text-gray-600" aria-label="Close">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2">
+            <Search className="h-4 w-4 text-gray-400" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={mode === 'user' ? 'Search users' : mode.startsWith('team') ? 'Search teams' : 'Search departments'}
+              className="w-full border-none text-sm focus:outline-none"
+              autoFocus
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {options.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-gray-400">No options</div>
+            ) : (
+              options.map(k => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => {
+                    onAdd({ type: mode, key: k });
+                    setQuery('');
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <span>{k}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 type ChartUserAdderProps = {
@@ -109,18 +208,21 @@ const ChartUserAdder: React.FC<ChartUserAdderProps> = ({ availableUsers, exclude
 
 type AggregatedRow = {
   user: string;
+  team: string;
   department: string;
   org: string;
   locBugfixes: number;
   locFeatures: number;
+  locTech: number;
   locThirdParty: number;
+  locUnknown: number;
   locCommitted: number;
   qualityScore: number;
 };
 
-type SortKey = keyof Pick<AggregatedRow, 'user' | 'department' | 'org' | 'locCommitted' | 'locBugfixes' | 'locFeatures' | 'locThirdParty' | 'qualityScore'>;
+type SortKey = keyof Pick<AggregatedRow, 'user' | 'team' | 'department' | 'org' | 'locCommitted' | 'locBugfixes' | 'locFeatures' | 'locTech' | 'locThirdParty' | 'locUnknown' | 'qualityScore'>;
 type SortDir = 'asc' | 'desc';
-type CategoryKey = 'locBugfixes' | 'locFeatures' | 'locThirdParty' | 'locTotal';
+type CategoryKey = 'locBugfixes' | 'locFeatures' | 'locTech' | 'locThirdParty' | 'locUnknown' | 'locTotal';
 
 const rawData: CommitRecord[] = [
   { user: 'john.doe', department: 'Platform', org: 'acme', date: '2025-08-18', locBugfixes: 140, locFeatures: 360, locThirdParty: 45, qualityScore: 82 },
@@ -166,24 +268,59 @@ const parseDate = (date: string): Date => new Date(`${date}T00:00:00Z`);
 const formatDayLabel = (date: Date): string =>
   new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
 
+const startOfWeekUTC = (date: Date): Date => {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = d.getUTCDay();
+  const diff = (day + 6) % 7; // Monday as start of week
+  d.setUTCDate(d.getUTCDate() - diff);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+};
+
+const startOfMonthUTC = (date: Date): Date => {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+};
+
+const formatWeekLabel = (monday: Date): string => `Week of ${formatDayLabel(monday)}`;
+const formatMonthLabel = (firstOfMonth: Date): string =>
+  new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' }).format(firstOfMonth);
+
 const categoryConfig: Record<CategoryKey, { label: string; color: string }> = {
-  locBugfixes: { label: 'Bugs LoC', color: '#f97316' },
-  locFeatures: { label: 'Features LoC', color: '#2563eb' },
-  locThirdParty: { label: 'Third-party LoC', color: '#8b5cf6' },
+  locBugfixes: { label: 'Bugs LoC', color: '#2563eb' },
+  locFeatures: { label: 'Features LoC', color: '#60a5fa' },
+  locTech: { label: 'Tech LoC', color: '#93c5fd' },
+  locThirdParty: { label: 'Third-party LoC', color: '#bfdbfe' },
+  locUnknown: { label: 'Unknown LoC', color: '#dbeafe' },
   locTotal: { label: 'Total LoC', color: '#0f172a' }
 };
+
+const categoryOrder: CategoryKey[] = ['locBugfixes', 'locFeatures', 'locTech', 'locThirdParty', 'locUnknown'];
+
+const comparisonPalettes: string[][] = [
+  ['#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'], // blueish
+  ['#047857', '#059669', '#10b981', '#34d399', '#6ee7b7'], // greenish
+  ['#6d28d9', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd'], // purple
+  ['#c2410c', '#ea580c', '#f97316', '#fb923c', '#fdba74'], // orange
+  ['#be123c', '#e11d48', '#f43f5e', '#fb7185', '#fda4af']  // rose
+];
+
+const comparisonTotalColors: string[] = [
+  '#1d4ed8', '#047857', '#6d28d9', '#c2410c', '#be123c'
+];
 
 type ChartPoint = {
   label: string;
   sortValue: number;
   locBugfixes: number;
   locFeatures: number;
+  locTech: number;
   locThirdParty: number;
+  locUnknown: number;
   locTotal: number;
   [key: string]: number | string;
 };
 
-type ChartMode = 'stacked' | 'line';
+ 
 
 const PAGE_SIZE = 10;
 
@@ -197,9 +334,10 @@ type CustomTooltipProps = {
   active?: boolean;
   payload?: CustomTooltipItem[];
   label?: string | number;
+  showTotalFooter?: boolean;
 };
 
-const ChartTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
+const ChartTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, showTotalFooter = true }) => {
   if (!active || !payload || payload.length === 0) return null;
 
   const total = payload.reduce<number>((sum, entry) => sum + Number(entry.value ?? 0), 0);
@@ -221,14 +359,19 @@ const ChartTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) 
           </div>
         ))}
       </div>
-      <div className="mt-3 border-t border-gray-100 pt-2 text-right text-xs text-gray-500">
-        Total: {numberFmt(total)}
-      </div>
+      {showTotalFooter && (
+        <div className="mt-3 border-t border-gray-100 pt-2 text-right text-xs text-gray-500">
+          Total: {numberFmt(total)}
+        </div>
+      )}
     </div>
   );
 };
 
 const userCategoryKey = (user: string, category: CategoryKey) => `${user}__${category}`;
+type ComparisonType = 'user' | 'team_total' | 'team_avg' | 'department_total' | 'department_avg';
+type ComparisonItem = { type: ComparisonType; key: string };
+const comparisonKey = (item: ComparisonItem, category: CategoryKey) => `${item.type}:${item.key}__${category}`;
 
 const CommitDashboard: React.FC = () => {
   const [orgQuery, setOrgQuery] = useState('');
@@ -238,12 +381,14 @@ const CommitDashboard: React.FC = () => {
   const [sortKey, setSortKey] = useState<SortKey>('locCommitted');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [focusedUser, setFocusedUser] = useState<string | null>(null);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [chartMode, setChartMode] = useState<ChartMode>('stacked');
+  const [selectedItems, setSelectedItems] = useState<ComparisonItem[]>([]);
+  const [timeScale, setTimeScale] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [visibleCategories, setVisibleCategories] = useState<Record<CategoryKey, boolean>>({
     locBugfixes: true,
     locFeatures: true,
+    locTech: true,
     locThirdParty: true,
+    locUnknown: true,
     locTotal: true
   });
   const [page, setPage] = useState(0);
@@ -271,11 +416,14 @@ const CommitDashboard: React.FC = () => {
         grouped.set(record.user, {
           row: {
             user: record.user,
+            team: record.department,
             department: record.department,
             org: record.org,
             locBugfixes: 0,
             locFeatures: 0,
+            locTech: 0,
             locThirdParty: 0,
+            locUnknown: 0,
             locCommitted: 0,
             qualityScore: 0
           },
@@ -285,12 +433,15 @@ const CommitDashboard: React.FC = () => {
       }
 
       const entry = grouped.get(record.user)!;
+      entry.row.team = record.department;
       entry.row.department = record.department;
       entry.row.org = record.org;
       entry.row.locBugfixes += record.locBugfixes;
       entry.row.locFeatures += record.locFeatures;
+      entry.row.locTech += record.locTech || 0;
       entry.row.locThirdParty += record.locThirdParty;
-      entry.row.locCommitted = entry.row.locBugfixes + entry.row.locFeatures + entry.row.locThirdParty;
+      entry.row.locUnknown += record.locUnknown || 0;
+      entry.row.locCommitted = entry.row.locBugfixes + entry.row.locFeatures + entry.row.locTech + entry.row.locThirdParty + entry.row.locUnknown;
       entry.qualityTotal += record.qualityScore;
       entry.sampleCount += 1;
     });
@@ -330,16 +481,16 @@ const CommitDashboard: React.FC = () => {
   }, [sortedRows, focusedUser]);
 
   useEffect(() => {
-    setSelectedUsers(prev => {
+    setSelectedItems(prev => {
       if (!sortedRows.length) {
         return prev.length ? [] : prev;
       }
-
-      const valid = prev.filter(user => sortedRows.some(row => row.user === user));
-      if (valid.length !== prev.length) {
-        return valid;
-      }
-      return prev;
+      return prev.filter(item => {
+        if (item.type === 'user') return sortedRows.some(row => row.user === item.key);
+        if (item.type.startsWith('team')) return true;
+        if (item.type.startsWith('department')) return true;
+        return false;
+      });
     });
   }, [sortedRows]);
 
@@ -367,34 +518,88 @@ const CommitDashboard: React.FC = () => {
       {
         totals: Record<CategoryKey, number>;
         perUser: Map<string, Record<CategoryKey, number>>;
+        perTeam: Map<string, Record<CategoryKey, number>>;
+        perDept: Map<string, Record<CategoryKey, number>>;
+        perTeamUsers: Map<string, Set<string>>;
+        perDeptUsers: Map<string, Set<string>>;
       }
     >();
 
     filteredRecords.forEach(record => {
       const bucket = byDate.get(record.date) ?? {
-        totals: { locBugfixes: 0, locFeatures: 0, locThirdParty: 0, locTotal: 0 },
-        perUser: new Map()
+        totals: { locBugfixes: 0, locFeatures: 0, locTech: 0, locThirdParty: 0, locUnknown: 0, locTotal: 0 },
+        perUser: new Map(),
+        perTeam: new Map(),
+        perDept: new Map(),
+        perTeamUsers: new Map(),
+        perDeptUsers: new Map()
       };
 
       bucket.totals.locBugfixes += record.locBugfixes;
       bucket.totals.locFeatures += record.locFeatures;
+      bucket.totals.locTech += record.locTech || 0;
       bucket.totals.locThirdParty += record.locThirdParty;
+      bucket.totals.locUnknown += record.locUnknown || 0;
       bucket.totals.locTotal =
-        bucket.totals.locBugfixes + bucket.totals.locFeatures + bucket.totals.locThirdParty;
+        bucket.totals.locBugfixes + bucket.totals.locFeatures + bucket.totals.locTech + bucket.totals.locThirdParty + bucket.totals.locUnknown;
 
       const userEntry = bucket.perUser.get(record.user) ?? {
         locBugfixes: 0,
         locFeatures: 0,
+        locTech: 0,
         locThirdParty: 0,
+        locUnknown: 0,
         locTotal: 0
       };
 
       userEntry.locBugfixes += record.locBugfixes;
       userEntry.locFeatures += record.locFeatures;
+      userEntry.locTech += record.locTech || 0;
       userEntry.locThirdParty += record.locThirdParty;
-      userEntry.locTotal = userEntry.locBugfixes + userEntry.locFeatures + userEntry.locThirdParty;
+      userEntry.locUnknown += record.locUnknown || 0;
+      userEntry.locTotal = userEntry.locBugfixes + userEntry.locFeatures + userEntry.locTech + userEntry.locThirdParty + userEntry.locUnknown;
 
       bucket.perUser.set(record.user, userEntry);
+
+      const teamKey = record.department;
+      const teamEntry = bucket.perTeam.get(teamKey) ?? {
+        locBugfixes: 0,
+        locFeatures: 0,
+        locTech: 0,
+        locThirdParty: 0,
+        locUnknown: 0,
+        locTotal: 0
+      };
+      teamEntry.locBugfixes += record.locBugfixes;
+      teamEntry.locFeatures += record.locFeatures;
+      teamEntry.locTech += record.locTech || 0;
+      teamEntry.locThirdParty += record.locThirdParty;
+      teamEntry.locUnknown += record.locUnknown || 0;
+      teamEntry.locTotal = teamEntry.locBugfixes + teamEntry.locFeatures + teamEntry.locTech + teamEntry.locThirdParty + teamEntry.locUnknown;
+      bucket.perTeam.set(teamKey, teamEntry);
+      const teamUsers = bucket.perTeamUsers.get(teamKey) ?? new Set<string>();
+      teamUsers.add(record.user);
+      bucket.perTeamUsers.set(teamKey, teamUsers);
+
+      const deptKey = record.org;
+      const deptEntry = bucket.perDept.get(deptKey) ?? {
+        locBugfixes: 0,
+        locFeatures: 0,
+        locTech: 0,
+        locThirdParty: 0,
+        locUnknown: 0,
+        locTotal: 0
+      };
+      deptEntry.locBugfixes += record.locBugfixes;
+      deptEntry.locFeatures += record.locFeatures;
+      deptEntry.locTech += record.locTech || 0;
+      deptEntry.locThirdParty += record.locThirdParty;
+      deptEntry.locUnknown += record.locUnknown || 0;
+      deptEntry.locTotal = deptEntry.locBugfixes + deptEntry.locFeatures + deptEntry.locTech + deptEntry.locThirdParty + deptEntry.locUnknown;
+      bucket.perDept.set(deptKey, deptEntry);
+      const deptUsers = bucket.perDeptUsers.get(deptKey) ?? new Set<string>();
+      deptUsers.add(record.user);
+      bucket.perDeptUsers.set(deptKey, deptUsers);
       byDate.set(record.date, bucket);
     });
 
@@ -411,9 +616,7 @@ const CommitDashboard: React.FC = () => {
       return [];
     }
 
-    const selectedSet = new Set(selectedUsers);
-
-    const points: ChartPoint[] = [];
+    const grouped = new Map<string, ChartPoint>();
     const cursor = new Date(startDate);
 
     while (cursor <= endDate) {
@@ -422,52 +625,115 @@ const CommitDashboard: React.FC = () => {
         const iso = cursor.toISOString().slice(0, 10);
         const data = byDate.get(iso);
 
+        let groupKey: string;
+        let label: string;
+        let sortValue: number;
+        if (timeScale === 'daily') {
+          groupKey = iso;
+          label = formatDayLabel(cursor);
+          sortValue = cursor.getTime();
+        } else if (timeScale === 'weekly') {
+          const monday = startOfWeekUTC(cursor);
+          groupKey = `w-${monday.toISOString().slice(0, 10)}`;
+          label = formatWeekLabel(monday);
+          sortValue = monday.getTime();
+        } else {
+          const first = startOfMonthUTC(cursor);
+          groupKey = `m-${first.toISOString().slice(0, 7)}`;
+          label = formatMonthLabel(first);
+          sortValue = first.getTime();
+        }
+
+        const gp = grouped.get(groupKey) ?? {
+          label,
+          sortValue,
+          locBugfixes: 0,
+          locFeatures: 0,
+          locTech: 0,
+          locThirdParty: 0,
+          locUnknown: 0,
+          locTotal: 0
+        } as ChartPoint;
+
         const totals = data?.totals ?? {
           locBugfixes: 0,
           locFeatures: 0,
+          locTech: 0,
           locThirdParty: 0,
+          locUnknown: 0,
           locTotal: 0
         };
 
-        const point: ChartPoint = {
-          label: formatDayLabel(cursor),
-          sortValue: cursor.getTime(),
-          locBugfixes: totals.locBugfixes,
-          locFeatures: totals.locFeatures,
-          locThirdParty: totals.locThirdParty,
-          locTotal: totals.locTotal
-        };
+        gp.locBugfixes += totals.locBugfixes;
+        gp.locFeatures += totals.locFeatures;
+        gp.locTech += totals.locTech;
+        gp.locThirdParty += totals.locThirdParty;
+        gp.locUnknown += totals.locUnknown;
+        gp.locTotal += totals.locTotal;
 
-        if (selectedSet.size > 0) {
-          selectedSet.forEach(user => {
-            const userTotals = data?.perUser.get(user) ?? {
-              locBugfixes: 0,
-              locFeatures: 0,
-              locThirdParty: 0,
-              locTotal: 0
-            };
-            point[userCategoryKey(user, 'locBugfixes')] = userTotals.locBugfixes;
-            point[userCategoryKey(user, 'locFeatures')] = userTotals.locFeatures;
-            point[userCategoryKey(user, 'locThirdParty')] = userTotals.locThirdParty;
-            point[userCategoryKey(user, 'locTotal')] = userTotals.locTotal;
+        if (selectedItems.length > 0) {
+          selectedItems.forEach(item => {
+            let rec = { locBugfixes: 0, locFeatures: 0, locTech: 0, locThirdParty: 0, locUnknown: 0, locTotal: 0 };
+            if (item.type === 'user') {
+              const u = data?.perUser.get(item.key);
+              if (u) rec = u;
+            } else if (item.type === 'team_total') {
+              const t = data?.perTeam.get(item.key);
+              if (t) rec = t;
+            } else if (item.type === 'team_avg') {
+              const t = data?.perTeam.get(item.key);
+              const cnt = data?.perTeamUsers.get(item.key)?.size || 0;
+              if (t && cnt > 0) {
+                rec = {
+                  locBugfixes: Math.round(t.locBugfixes / cnt),
+                  locFeatures: Math.round(t.locFeatures / cnt),
+                  locTech: Math.round(t.locTech / cnt),
+                  locThirdParty: Math.round(t.locThirdParty / cnt),
+                  locUnknown: Math.round(t.locUnknown / cnt),
+                  locTotal: Math.round(t.locTotal / cnt)
+                };
+              }
+            } else if (item.type === 'department_total') {
+              const d = data?.perDept.get(item.key);
+              if (d) rec = d;
+            } else if (item.type === 'department_avg') {
+              const d = data?.perDept.get(item.key);
+              const cnt = data?.perDeptUsers.get(item.key)?.size || 0;
+              if (d && cnt > 0) {
+                rec = {
+                  locBugfixes: Math.round(d.locBugfixes / cnt),
+                  locFeatures: Math.round(d.locFeatures / cnt),
+                  locTech: Math.round(d.locTech / cnt),
+                  locThirdParty: Math.round(d.locThirdParty / cnt),
+                  locUnknown: Math.round(d.locUnknown / cnt),
+                  locTotal: Math.round(d.locTotal / cnt)
+                };
+              }
+            }
+            gp[comparisonKey(item, 'locBugfixes')] = (gp[comparisonKey(item, 'locBugfixes')] as number | undefined || 0) + rec.locBugfixes;
+            gp[comparisonKey(item, 'locFeatures')] = (gp[comparisonKey(item, 'locFeatures')] as number | undefined || 0) + rec.locFeatures;
+            gp[comparisonKey(item, 'locTech')] = (gp[comparisonKey(item, 'locTech')] as number | undefined || 0) + rec.locTech;
+            gp[comparisonKey(item, 'locThirdParty')] = (gp[comparisonKey(item, 'locThirdParty')] as number | undefined || 0) + rec.locThirdParty;
+            gp[comparisonKey(item, 'locUnknown')] = (gp[comparisonKey(item, 'locUnknown')] as number | undefined || 0) + rec.locUnknown;
+            gp[comparisonKey(item, 'locTotal')] = (gp[comparisonKey(item, 'locTotal')] as number | undefined || 0) + rec.locTotal;
           });
         }
 
-        points.push(point);
+        grouped.set(groupKey, gp);
       }
 
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
-    return points.sort((a, b) => (a.sortValue as number) - (b.sortValue as number));
-  }, [filteredRecords, selectedUsers, from, to]);
+    return Array.from(grouped.values()).sort((a, b) => (a.sortValue as number) - (b.sortValue as number));
+  }, [filteredRecords, selectedItems, from, to, timeScale]);
 
   const setSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'user' || key === 'department' || key === 'org' ? 'asc' : 'desc');
+      setSortDir(key === 'user' || key === 'team' || key === 'department' || key === 'org' ? 'asc' : 'desc');
     }
   };
 
@@ -494,7 +760,9 @@ const CommitDashboard: React.FC = () => {
 
   const hasChartData = chartData.length > 0 && activeCategories.length > 0;
 
-  const availableChartUsers = useMemo(() => sortedRows.map(row => row.user), [sortedRows]);
+  const availableUsers = useMemo(() => sortedRows.map(row => row.user), [sortedRows]);
+  const availableTeams = useMemo(() => Array.from(new Set(filteredRecords.map(r => r.department))).sort(), [filteredRecords]);
+  const availableDepartments = useMemo(() => Array.from(new Set(filteredRecords.map(r => r.org))).sort(), [filteredRecords]);
 
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / PAGE_SIZE));
 
@@ -503,17 +771,16 @@ const CommitDashboard: React.FC = () => {
     [sortedRows, page]
   );
 
-  const canAddMoreUsers = selectedUsers.length < 5;
+  const canAddMore = selectedItems.length < 5;
 
-  const showTotalsOnly = selectedUsers.length === 0;
+  const showTotalsOnly = selectedItems.length === 0;
 
-  const toggleChartUser = useCallback((user: string) => {
-    setSelectedUsers(prev => {
-      if (prev.includes(user)) {
-        return prev.filter(u => u !== user);
-      }
+  const toggleComparison = useCallback((item: ComparisonItem) => {
+    setSelectedItems(prev => {
+      const exists = prev.some(p => p.type === item.type && p.key === item.key);
+      if (exists) return prev.filter(p => !(p.type === item.type && p.key === item.key));
       if (prev.length >= 5) return prev;
-      return [...prev, user];
+      return [...prev, item];
     });
   }, []);
 
@@ -667,12 +934,15 @@ const CommitDashboard: React.FC = () => {
                 <tr>
                   {([
                     { key: 'user', label: 'User' },
+                    { key: 'team', label: 'Team' },
                     { key: 'department', label: 'Department' },
                     { key: 'org', label: 'Org' },
                     { key: 'locCommitted', label: 'LOC Committed' },
                     { key: 'locBugfixes', label: 'LOC in Bugfixes' },
                     { key: 'locFeatures', label: 'LOC in Features' },
+                    { key: 'locTech', label: 'LOC in Tech' },
                     { key: 'locThirdParty', label: 'LOC in Third-party/Submodule' },
+                    { key: 'locUnknown', label: 'LOC Unknown' },
                     { key: 'qualityScore', label: 'Overall Code Quality' }
                   ] as { key: SortKey; label: string }[]).map(column => (
                     <th
@@ -707,41 +977,50 @@ const CommitDashboard: React.FC = () => {
                     aria-selected={focusedUser === row.user}
                   >
                     <td className="px-4 py-2 text-sm font-medium text-gray-900">{row.user}</td>
+                    <td className="px-4 py-2 text-sm text-gray-600">{row.team}</td>
                     <td className="px-4 py-2 text-sm text-gray-600">{row.department}</td>
                     <td className="px-4 py-2 text-sm text-gray-600">{row.org}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locCommitted)}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locBugfixes)}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locFeatures)}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locTech)}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locThirdParty)}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locUnknown)}</td>
                     <td className="px-4 py-2 text-sm">
                       <span className={`rounded px-2 py-1 text-xs font-medium ${qualityClass(row.qualityScore)}`}>
                         {row.qualityScore}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-sm text-right">
-                      <button
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation();
-                          toggleChartUser(row.user);
-                        }}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                          selectedUsers.includes(row.user)
-                            ? 'border-transparent bg-blue-600 text-white hover:bg-blue-700'
-                            : canAddMoreUsers
-                            ? 'border-blue-200 bg-white text-blue-600 hover:border-blue-300'
-                            : 'border-gray-200 bg-gray-50 text-gray-400'
-                        }`}
-                        disabled={!selectedUsers.includes(row.user) && !canAddMoreUsers}
-                      >
-                        {selectedUsers.includes(row.user) ? 'Remove' : 'Add to chart'}
-                      </button>
+                      {(() => {
+                        const item = { type: 'user' as ComparisonType, key: row.user };
+                        const isSelected = selectedItems.some(i => i.type === item.type && i.key === item.key);
+                        return (
+                          <button
+                            type="button"
+                            onClick={e => {
+                              e.stopPropagation();
+                              toggleComparison(item);
+                            }}
+                            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                              isSelected
+                                ? 'border-transparent bg-blue-600 text-white hover:bg-blue-700'
+                                : canAddMore
+                                ? 'border-blue-200 bg-white text-blue-600 hover:border-blue-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-400'
+                            }`}
+                            disabled={!isSelected && !canAddMore}
+                          >
+                            {isSelected ? 'Remove' : 'Add to chart'}
+                          </button>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
                 {sortedRows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-500">
+                    <td colSpan={12} className="px-4 py-6 text-center text-sm text-gray-500">
                       No data matches the current filters.
                     </td>
                   </tr>
@@ -799,15 +1078,15 @@ const CommitDashboard: React.FC = () => {
 
             <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex rounded-full bg-gray-100 p-1 text-sm font-medium text-gray-500">
-                {(['stacked', 'line'] as const).map(mode => (
+                {(['daily', 'weekly', 'monthly'] as const).map(scale => (
                   <button
-                    key={mode}
-                    onClick={() => setChartMode(mode)}
+                    key={scale}
+                    onClick={() => setTimeScale(scale)}
                     className={`rounded-full px-3 py-1 capitalize transition ${
-                      chartMode === mode ? 'bg-white text-gray-900 shadow-sm' : 'hover:text-gray-700'
+                      timeScale === scale ? 'bg-white text-gray-900 shadow-sm' : 'hover:text-gray-700'
                     }`}
                   >
-                    {mode === 'stacked' ? 'Stacked bars' : 'Lines'}
+                    {scale}
                   </button>
                 ))}
               </div>
@@ -831,19 +1110,25 @@ const CommitDashboard: React.FC = () => {
 
             <div className="mt-4 flex flex-col gap-3">
               <div>
-                <label className="mb-1 block text-xs text-gray-500">Add users to chart (max 5)</label>
+                <label className="mb-1 block text-xs text-gray-500">Add (max 5)</label>
                 <div className="flex flex-wrap gap-2">
-                  {selectedUsers.map(user => (
+                  {selectedItems.map((item, idx) => (
                     <span
-                      key={user}
-                      className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+                      key={`${item.type}:${item.key}`}
+                      className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+                      style={{
+                        backgroundColor: `${comparisonPalettes[idx % comparisonPalettes.length][0]}22`,
+                        color: comparisonPalettes[idx % comparisonPalettes.length][0],
+                        border: `1px solid ${comparisonPalettes[idx % comparisonPalettes.length][0]}33`
+                      }}
                     >
-                      {user}
+                      {item.type === 'user' ? item.key : item.type.replace('_', ' ') + ': ' + item.key}
                       <button
                         type="button"
-                        onClick={() => toggleChartUser(user)}
-                        className="rounded-full p-1 text-blue-500 hover:text-blue-700"
-                        aria-label={`Remove ${user}`}
+                        onClick={() => toggleComparison(item)}
+                        className="rounded-full p-1"
+                        style={{ color: comparisonPalettes[idx % comparisonPalettes.length][0] }}
+                        aria-label={`Remove`}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -854,8 +1139,14 @@ const CommitDashboard: React.FC = () => {
                       Total (all filtered users)
                     </span>
                   )}
-                  {canAddMoreUsers && (
-                    <ChartUserAdder availableUsers={availableChartUsers} excludedUsers={selectedUsers} onAdd={toggleChartUser} />
+                  {canAddMore && (
+                    <ChartComparisonAdder
+                      users={availableUsers}
+                      teams={availableTeams}
+                      departments={availableDepartments}
+                      excluded={selectedItems}
+                      onAdd={toggleComparison}
+                    />
                   )}
                 </div>
               </div>
@@ -864,8 +1155,7 @@ const CommitDashboard: React.FC = () => {
             <div className="mt-6 h-72 w-full">
               {hasChartData ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  {chartMode === 'stacked' ? (
-                    <ComposedChart data={chartData} margin={{ left: 4, right: 12, top: 20, bottom: 0 }}>
+                  <ComposedChart data={chartData} margin={{ left: 4, right: 12, top: 20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis
                         dataKey="label"
@@ -877,7 +1167,7 @@ const CommitDashboard: React.FC = () => {
                         height={48}
                       />
                       <YAxis tickFormatter={numberFmt} tick={{ fill: '#6b7280', fontSize: 12 }} stroke="#d1d5db" />
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip showTotalFooter={showTotalsOnly} />} />
                       {showTotalsOnly
                         ? activeBarCategories.map(([key, info]) => (
                             <Bar
@@ -889,89 +1179,48 @@ const CommitDashboard: React.FC = () => {
                               animationDuration={500}
                             />
                           ))
-                        : selectedUsers.flatMap(user =>
-                            activeBarCategories.map(([key, info]) => (
+                        : selectedItems.flatMap((item, idx) =>
+                            activeBarCategories.map(([key]) => (
                               <Bar
-                                key={`${user}-${key}`}
-                                dataKey={userCategoryKey(user, key)}
-                                name={`${user} – ${info.label}`}
-                                stackId={user}
-                                fill={info.color}
+                                key={`${item.type}:${item.key}-${key}`}
+                                dataKey={comparisonKey(item, key)}
+                                name={`${item.type === 'user' ? item.key : item.type.replace('_', ' ') + ': ' + item.key} – ${categoryConfig[key].label}`}
+                                stackId={`${item.type}:${item.key}`}
+                                fill={comparisonPalettes[idx % comparisonPalettes.length][categoryOrder.indexOf(key)]}
                                 animationDuration={500}
                               />
                             ))
                           )}
                       {visibleCategories.locTotal && (
                         <>
-                          <Line
-                            type="monotone"
-                            dataKey="locTotal"
-                            name={categoryConfig.locTotal.label}
-                            stroke={categoryConfig.locTotal.color}
-                            strokeWidth={2}
-                            dot={false}
-                            animationDuration={500}
-                          />
-                          {!showTotalsOnly &&
-                            selectedUsers.map(user => (
+                          {showTotalsOnly ? (
+                            <Line
+                              type="monotone"
+                              dataKey="locTotal"
+                              name={categoryConfig.locTotal.label}
+                              stroke={comparisonPalettes[0][0]}
+                              strokeWidth={2}
+                              dot={false}
+                              animationDuration={500}
+                            />
+                          ) : (
+                            selectedItems.map((item, idx) => (
                               <Line
-                                key={`${user}-locTotal`}
+                                key={`${item.type}:${item.key}-locTotal`}
                                 type="monotone"
-                                dataKey={userCategoryKey(user, 'locTotal')}
-                                name={`${user} – ${categoryConfig.locTotal.label}`}
-                                stroke={categoryConfig.locTotal.color}
+                                dataKey={comparisonKey(item, 'locTotal')}
+                                name={`${item.type === 'user' ? item.key : item.type.replace('_', ' ') + ': ' + item.key} – ${categoryConfig.locTotal.label}`}
+                                stroke={comparisonPalettes[idx % comparisonPalettes.length][0]}
                                 strokeWidth={1.5}
                                 strokeDasharray="4 2"
                                 dot={false}
                                 animationDuration={500}
                               />
-                            ))}
+                            ))
+                          )}
                         </>
                       )}
                     </ComposedChart>
-                  ) : (
-                    <LineChart data={chartData} margin={{ left: 4, right: 12, top: 20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                        stroke="#d1d5db"
-                        interval={0}
-                        angle={-20}
-                        textAnchor="end"
-                        height={48}
-                      />
-                      <YAxis tickFormatter={numberFmt} tick={{ fill: '#6b7280', fontSize: 12 }} stroke="#d1d5db" />
-                      <Tooltip content={<ChartTooltip />} />
-                      {showTotalsOnly
-                        ? activeCategories.map(([key, info]) => (
-                            <Line
-                              key={key}
-                              type="monotone"
-                              dataKey={key}
-                              name={info.label}
-                              stroke={info.color}
-                              strokeWidth={2}
-                              dot={false}
-                              animationDuration={500}
-                            />
-                          ))
-                        : selectedUsers.flatMap(user =>
-                            activeCategories.map(([key, info]) => (
-                              <Line
-                                key={`${user}-${key}`}
-                                type="monotone"
-                                dataKey={userCategoryKey(user, key)}
-                                name={`${user} – ${info.label}`}
-                                stroke={info.color}
-                                strokeWidth={2}
-                                dot={false}
-                                animationDuration={500}
-                              />
-                            ))
-                          )}
-                    </LineChart>
-                  )}
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-gray-500">
