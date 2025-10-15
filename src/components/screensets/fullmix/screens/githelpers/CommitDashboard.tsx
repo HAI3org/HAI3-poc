@@ -395,12 +395,23 @@ const CommitDashboard: React.FC = () => {
 
   const orgOptions = useMemo(() => Array.from(new Set(rawData.map(record => record.org))).sort(), []);
   const userOptions = useMemo(() => Array.from(new Set(rawData.map(record => record.user))).sort(), []);
+  const orgTeamOptions = useMemo(
+    () => Array.from(new Set([...rawData.map(r => r.org), ...rawData.map(r => r.department)])).sort(),
+    []
+  );
 
   const filteredRecords = useMemo(() => {
     return rawData.filter(record => {
       const orgSearch = orgQuery.trim().toLowerCase();
       const userSearch = userQuery.trim().toLowerCase();
-      if (orgSearch && !record.org.toLowerCase().includes(orgSearch)) return false;
+      if (
+        orgSearch &&
+        !(
+          record.org.toLowerCase().includes(orgSearch) ||
+          record.department.toLowerCase().includes(orgSearch)
+        )
+      )
+        return false;
       if (userSearch && !record.user.toLowerCase().includes(userSearch)) return false;
       if (from && record.date < from) return false;
       if (to && record.date > to) return false;
@@ -802,7 +813,7 @@ const CommitDashboard: React.FC = () => {
       <div className="mb-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Org search</label>
+            <label className="mb-1 block text-xs text-gray-500">Org / team search</label>
             <div className="flex items-center space-x-2">
               <Building2 className="h-4 w-4 text-gray-400" />
               <div className="relative w-full">
@@ -810,8 +821,8 @@ const CommitDashboard: React.FC = () => {
                 <input
                   value={orgQuery}
                   onChange={e => setOrgQuery(e.target.value)}
-                  placeholder="Search orgs"
-                  list="org-suggestions"
+                  placeholder="Search orgs or teams"
+                  list="orgteam-suggestions"
                   className="w-full rounded-md border border-gray-300 py-1 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {orgQuery && (
@@ -825,9 +836,9 @@ const CommitDashboard: React.FC = () => {
                   </button>
                 )}
               </div>
-              <datalist id="org-suggestions">
-                {orgOptions.map(org => (
-                  <option key={org} value={org} />
+              <datalist id="orgteam-suggestions">
+                {orgTeamOptions.map(opt => (
+                  <option key={opt} value={opt} />
                 ))}
               </datalist>
             </div>
@@ -934,9 +945,8 @@ const CommitDashboard: React.FC = () => {
                 <tr>
                   {([
                     { key: 'user', label: 'User' },
-                    { key: 'team', label: 'Team' },
-                    { key: 'department', label: 'Department' },
                     { key: 'org', label: 'Org' },
+                    { key: 'team', label: 'Team' },
                     { key: 'locCommitted', label: 'LOC Committed' },
                     { key: 'locBugfixes', label: 'LOC in Bugfixes' },
                     { key: 'locFeatures', label: 'LOC in Features' },
@@ -977,16 +987,15 @@ const CommitDashboard: React.FC = () => {
                     aria-selected={focusedUser === row.user}
                   >
                     <td className="px-4 py-2 text-sm font-medium text-gray-900">{row.user}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{row.team}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{row.department}</td>
                     <td className="px-4 py-2 text-sm text-gray-600">{row.org}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locCommitted)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locBugfixes)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locFeatures)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locTech)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locThirdParty)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{numberFmt(row.locUnknown)}</td>
-                    <td className="px-4 py-2 text-sm">
+                    <td className="px-4 py-2 text-sm text-gray-600">{row.team}</td>
+                    <td className="px-4 py-2 text-sm text-center text-gray-900">{numberFmt(row.locCommitted)}</td>
+                    <td className="px-4 py-2 text-sm text-center text-gray-900">{numberFmt(row.locBugfixes)}</td>
+                    <td className="px-4 py-2 text-sm text-center text-gray-900">{numberFmt(row.locFeatures)}</td>
+                    <td className="px-4 py-2 text-sm text-center text-gray-900">{numberFmt(row.locTech)}</td>
+                    <td className="px-4 py-2 text-sm text-center text-gray-900">{numberFmt(row.locThirdParty)}</td>
+                    <td className="px-4 py-2 text-sm text-center text-gray-900">{numberFmt(row.locUnknown)}</td>
+                    <td className="px-4 py-2 text-sm text-center">
                       <span className={`rounded px-2 py-1 text-xs font-medium ${qualityClass(row.qualityScore)}`}>
                         {row.qualityScore}
                       </span>
@@ -1020,7 +1029,7 @@ const CommitDashboard: React.FC = () => {
                 ))}
                 {sortedRows.length === 0 && (
                   <tr>
-                    <td colSpan={12} className="px-4 py-6 text-center text-sm text-gray-500">
+                    <td colSpan={11} className="px-4 py-6 text-center text-sm text-gray-500">
                       No data matches the current filters.
                     </td>
                   </tr>
