@@ -21,19 +21,10 @@ import {
   Search,
   X
 } from 'lucide-react';
+import type { CommitRecord } from './Data';
+import { rawData } from './Data';
 
-type CommitRecord = {
-  user: string;
-  department: string;
-  org: string;
-  date: string;
-  locBugfixes: number;
-  locFeatures: number;
-  locThirdParty: number;
-  locTech?: number;
-  locUnknown?: number;
-  qualityScore: number;
-};
+// CommitRecord type imported from './Data'
 
 type CompType = 'user' | 'team_total' | 'team_avg' | 'department_total' | 'department_avg';
 type CompItemShape = { type: CompType; key: string };
@@ -222,37 +213,9 @@ type AggregatedRow = {
 
 type SortKey = keyof Pick<AggregatedRow, 'user' | 'team' | 'department' | 'org' | 'locCommitted' | 'locBugfixes' | 'locFeatures' | 'locTech' | 'locThirdParty' | 'locUnknown' | 'qualityScore'>;
 type SortDir = 'asc' | 'desc';
-type CategoryKey = 'locBugfixes' | 'locFeatures' | 'locTech' | 'locThirdParty' | 'locUnknown' | 'locTotal';
-
-const rawData: CommitRecord[] = [
-  { user: 'john.doe', department: 'Platform', org: 'acme', date: '2025-08-18', locBugfixes: 140, locFeatures: 360, locThirdParty: 45, qualityScore: 82 },
-  { user: 'john.doe', department: 'Platform', org: 'acme', date: '2025-08-19', locBugfixes: 120, locFeatures: 390, locThirdParty: 30, qualityScore: 84 },
-  { user: 'john.doe', department: 'Platform', org: 'acme', date: '2025-08-21', locBugfixes: 160, locFeatures: 420, locThirdParty: 55, qualityScore: 87 },
-  { user: 'john.doe', department: 'Platform', org: 'acme', date: '2025-08-25', locBugfixes: 130, locFeatures: 460, locThirdParty: 60, qualityScore: 88 },
-  { user: 'john.doe', department: 'Platform', org: 'acme', date: '2025-08-28', locBugfixes: 150, locFeatures: 480, locThirdParty: 70, qualityScore: 89 },
-  { user: 'jane.smith', department: 'Payments', org: 'acme', date: '2025-08-17', locBugfixes: 80, locFeatures: 340, locThirdParty: 45, qualityScore: 86 },
-  { user: 'jane.smith', department: 'Payments', org: 'acme', date: '2025-08-20', locBugfixes: 95, locFeatures: 360, locThirdParty: 55, qualityScore: 89 },
-  { user: 'jane.smith', department: 'Payments', org: 'acme', date: '2025-08-23', locBugfixes: 110, locFeatures: 380, locThirdParty: 40, qualityScore: 90 },
-  { user: 'jane.smith', department: 'Payments', org: 'acme', date: '2025-08-26', locBugfixes: 100, locFeatures: 420, locThirdParty: 50, qualityScore: 92 },
-  { user: 'jane.smith', department: 'Payments', org: 'acme', date: '2025-08-28', locBugfixes: 105, locFeatures: 390, locThirdParty: 60, qualityScore: 91 },
-  { user: 'mike.wilson', department: 'Core', org: 'globex', date: '2025-08-18', locBugfixes: 70, locFeatures: 260, locThirdParty: 40, qualityScore: 72 },
-  { user: 'mike.wilson', department: 'Core', org: 'globex', date: '2025-08-19', locBugfixes: 65, locFeatures: 240, locThirdParty: 35, qualityScore: 74 },
-  { user: 'mike.wilson', department: 'Core', org: 'globex', date: '2025-08-24', locBugfixes: 90, locFeatures: 280, locThirdParty: 50, qualityScore: 76 },
-  { user: 'mike.wilson', department: 'Core', org: 'globex', date: '2025-08-27', locBugfixes: 85, locFeatures: 300, locThirdParty: 45, qualityScore: 78 },
-  { user: 'mike.wilson', department: 'Core', org: 'globex', date: '2025-08-29', locBugfixes: 95, locFeatures: 310, locThirdParty: 55, qualityScore: 80 },
-  { user: 'emily.chen', department: 'Analytics', org: 'acme', date: '2025-08-16', locBugfixes: 100, locFeatures: 480, locThirdParty: 70, qualityScore: 90 },
-  { user: 'emily.chen', department: 'Analytics', org: 'acme', date: '2025-08-20', locBugfixes: 120, locFeatures: 500, locThirdParty: 80, qualityScore: 92 },
-  { user: 'emily.chen', department: 'Analytics', org: 'acme', date: '2025-08-24', locBugfixes: 110, locFeatures: 520, locThirdParty: 75, qualityScore: 93 },
-  { user: 'emily.chen', department: 'Analytics', org: 'acme', date: '2025-08-27', locBugfixes: 130, locFeatures: 540, locThirdParty: 85, qualityScore: 94 },
-  { user: 'alex.ivanov', department: 'Mobile', org: 'globex', date: '2025-08-18', locBugfixes: 90, locFeatures: 310, locThirdParty: 60, qualityScore: 78 },
-  { user: 'alex.ivanov', department: 'Mobile', org: 'globex', date: '2025-08-21', locBugfixes: 95, locFeatures: 330, locThirdParty: 55, qualityScore: 80 },
-  { user: 'alex.ivanov', department: 'Mobile', org: 'globex', date: '2025-08-25', locBugfixes: 100, locFeatures: 350, locThirdParty: 50, qualityScore: 81 },
-  { user: 'alex.ivanov', department: 'Mobile', org: 'globex', date: '2025-08-28', locBugfixes: 110, locFeatures: 360, locThirdParty: 65, qualityScore: 83 },
-  { user: 'sofia.garcia', department: 'Web', org: 'initech', date: '2025-08-17', locBugfixes: 70, locFeatures: 280, locThirdParty: 45, qualityScore: 82 },
-  { user: 'sofia.garcia', department: 'Web', org: 'initech', date: '2025-08-20', locBugfixes: 75, locFeatures: 290, locThirdParty: 50, qualityScore: 83 },
-  { user: 'sofia.garcia', department: 'Web', org: 'initech', date: '2025-08-23', locBugfixes: 80, locFeatures: 300, locThirdParty: 55, qualityScore: 84 },
-  { user: 'sofia.garcia', department: 'Web', org: 'initech', date: '2025-08-27', locBugfixes: 85, locFeatures: 320, locThirdParty: 60, qualityScore: 85 }
-];
+type BaseCategoryKey = 'locBugfixes' | 'locFeatures' | 'locTech' | 'locThirdParty' | 'locUnknown' | 'locTotal';
+type CategoryKey = BaseCategoryKey;
+type StatsRec = Record<BaseCategoryKey, number>;
 
 const numberFmt = (n: number) => n.toLocaleString();
 
@@ -288,20 +251,25 @@ const formatMonthLabel = (firstOfMonth: Date): string =>
 const categoryConfig: Record<CategoryKey, { label: string; color: string }> = {
   locBugfixes: { label: 'Bugs LoC', color: '#2563eb' },
   locFeatures: { label: 'Features LoC', color: '#60a5fa' },
-  locTech: { label: 'Tech LoC', color: '#93c5fd' },
-  locThirdParty: { label: 'Third-party LoC', color: '#bfdbfe' },
+  locTech: { label: 'Tech LoC', color: '#bfdbfe' },
+  locThirdParty: { label: 'Third-party LoC', color: '#f59e0b' },
   locUnknown: { label: 'Unknown LoC', color: '#dbeafe' },
   locTotal: { label: 'Total LoC', color: '#0f172a' }
 };
 
-const categoryOrder: CategoryKey[] = ['locBugfixes', 'locFeatures', 'locTech', 'locThirdParty', 'locUnknown'];
+const categoryOrder: BaseCategoryKey[] = ['locBugfixes', 'locFeatures', 'locTech', 'locThirdParty', 'locUnknown'];
 
 const comparisonPalettes: string[][] = [
-  ['#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'], // blueish
-  ['#047857', '#059669', '#10b981', '#34d399', '#6ee7b7'], // greenish
-  ['#6d28d9', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd'], // purple
-  ['#c2410c', '#ea580c', '#f97316', '#fb923c', '#fdba74'], // orange
-  ['#be123c', '#e11d48', '#f43f5e', '#fb7185', '#fda4af']  // rose
+  ['#1d4ed8', '#2563eb', '#60a5fa', '#3b82f6', '#93c5fd'], // blue (3rd/4th swapped)
+  ['#047857', '#059669', '#34d399', '#10b981', '#6ee7b7'], // green (swapped)
+  ['#0e7490', '#0891b2', '#22d3ee', '#06b6d4', '#67e8f9'], // cyan (swapped)
+  ['#c2410c', '#ea580c', '#fb923c', '#f97316', '#fdba74'], // orange (swapped)
+  ['#be123c', '#e11d48', '#fb7185', '#f43f5e', '#fda4af'], // rose (swapped)
+  ['#b45309', '#d97706', '#fbbf24', '#f59e0b', '#fde68a'], // amber (swapped)
+  ['#0f766e', '#0d9488', '#2dd4bf', '#14b8a6', '#99f6e4'], // teal (swapped)
+  ['#3730a3', '#4338ca', '#818cf8', '#6366f1', '#a5b4fc'], // indigo (swapped)
+  ['#3f6212', '#4d7c0f', '#a3e635', '#84cc16', '#d9f99d'], // lime (swapped)
+  ['#0f172a', '#334155', '#94a3b8', '#64748b', '#cbd5e1']  // slate (swapped)
 ];
 
 const comparisonTotalColors: string[] = [
@@ -320,7 +288,7 @@ type ChartPoint = {
   [key: string]: number | string;
 };
 
- 
+
 
 const PAGE_SIZE = 10;
 
@@ -393,15 +361,18 @@ const CommitDashboard: React.FC = () => {
   });
   const [page, setPage] = useState(0);
 
-  const orgOptions = useMemo(() => Array.from(new Set(rawData.map(record => record.org))).sort(), []);
-  const userOptions = useMemo(() => Array.from(new Set(rawData.map(record => record.user))).sort(), []);
+  const orgOptions = useMemo(() => Array.from(new Set<string>(rawData.map((record: CommitRecord) => record.org))).sort(), []);
+  const userOptions = useMemo(() => Array.from(new Set<string>(rawData.map((record: CommitRecord) => record.user))).sort(), []);
   const orgTeamOptions = useMemo(
-    () => Array.from(new Set([...rawData.map(r => r.org), ...rawData.map(r => r.department)])).sort(),
+    () => Array.from(new Set<string>([
+      ...rawData.map((r: CommitRecord) => r.org),
+      ...rawData.map((r: CommitRecord) => r.department)
+    ])).sort(),
     []
   );
 
-  const filteredRecords = useMemo(() => {
-    return rawData.filter(record => {
+  const filteredRecords = useMemo<CommitRecord[]>(() => {
+    return rawData.filter((record: CommitRecord) => {
       const orgSearch = orgQuery.trim().toLowerCase();
       const userSearch = userQuery.trim().toLowerCase();
       if (
@@ -527,10 +498,10 @@ const CommitDashboard: React.FC = () => {
     const byDate = new Map<
       string,
       {
-        totals: Record<CategoryKey, number>;
-        perUser: Map<string, Record<CategoryKey, number>>;
-        perTeam: Map<string, Record<CategoryKey, number>>;
-        perDept: Map<string, Record<CategoryKey, number>>;
+        totals: StatsRec;
+        perUser: Map<string, StatsRec>;
+        perTeam: Map<string, StatsRec>;
+        perDept: Map<string, StatsRec>;
         perTeamUsers: Map<string, Set<string>>;
         perDeptUsers: Map<string, Set<string>>;
       }
@@ -772,8 +743,14 @@ const CommitDashboard: React.FC = () => {
   const hasChartData = chartData.length > 0 && activeCategories.length > 0;
 
   const availableUsers = useMemo(() => sortedRows.map(row => row.user), [sortedRows]);
-  const availableTeams = useMemo(() => Array.from(new Set(filteredRecords.map(r => r.department))).sort(), [filteredRecords]);
-  const availableDepartments = useMemo(() => Array.from(new Set(filteredRecords.map(r => r.org))).sort(), [filteredRecords]);
+  const availableTeams = useMemo(
+    () => Array.from(new Set(filteredRecords.map(r => r.department))).sort(),
+    [filteredRecords]
+  );
+  const availableDepartments = useMemo(
+    () => Array.from(new Set<string>(filteredRecords.map((r: CommitRecord) => r.org))).sort(),
+    [filteredRecords]
+  );
 
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / PAGE_SIZE));
 
@@ -782,7 +759,7 @@ const CommitDashboard: React.FC = () => {
     [sortedRows, page]
   );
 
-  const canAddMore = selectedItems.length < 5;
+  const canAddMore = selectedItems.length < 10;
 
   const showTotalsOnly = selectedItems.length === 0;
 
@@ -790,7 +767,7 @@ const CommitDashboard: React.FC = () => {
     setSelectedItems(prev => {
       const exists = prev.some(p => p.type === item.type && p.key === item.key);
       if (exists) return prev.filter(p => !(p.type === item.type && p.key === item.key));
-      if (prev.length >= 5) return prev;
+      if (prev.length >= 10) return prev;
       return [...prev, item];
     });
   }, []);
@@ -881,7 +858,7 @@ const CommitDashboard: React.FC = () => {
               <input
                 type="date"
                 value={from}
-                onChange={e => setFrom(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFrom(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -893,7 +870,7 @@ const CommitDashboard: React.FC = () => {
               <input
                 type="date"
                 value={to}
-                onChange={e => setTo(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTo(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -903,7 +880,7 @@ const CommitDashboard: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4 text-gray-400" />
               <select
-                onChange={e => {
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const preset = e.target.value;
                   if (!preset) {
                     setFrom('');
@@ -1119,7 +1096,7 @@ const CommitDashboard: React.FC = () => {
 
             <div className="mt-4 flex flex-col gap-3">
               <div>
-                <label className="mb-1 block text-xs text-gray-500">Add (max 5)</label>
+                <label className="mb-1 block text-xs text-gray-500">Add (max 10)</label>
                 <div className="flex flex-wrap gap-2">
                   {selectedItems.map((item, idx) => (
                     <span
@@ -1195,7 +1172,7 @@ const CommitDashboard: React.FC = () => {
                                 dataKey={comparisonKey(item, key)}
                                 name={`${item.type === 'user' ? item.key : item.type.replace('_', ' ') + ': ' + item.key} – ${categoryConfig[key].label}`}
                                 stackId={`${item.type}:${item.key}`}
-                                fill={comparisonPalettes[idx % comparisonPalettes.length][categoryOrder.indexOf(key)]}
+                                fill={comparisonPalettes[idx % comparisonPalettes.length][categoryOrder.indexOf(key as BaseCategoryKey)]}
                                 animationDuration={500}
                               />
                             ))
@@ -1229,6 +1206,7 @@ const CommitDashboard: React.FC = () => {
                           )}
                         </>
                       )}
+
                     </ComposedChart>
                 </ResponsiveContainer>
               ) : (
