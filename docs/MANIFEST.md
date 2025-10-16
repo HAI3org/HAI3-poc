@@ -40,6 +40,7 @@ HAI3 provides a unified UI-Core structure for all generated screens and allows d
 
 HAI3 ensures all generated screens fit into the defined panel layout.
 
+- UI-core library can be updated independently from the HAI3 repo at any time, screens development is not affected
 - Generated screens inherit layout templates
 - Generated screens do not break or overlap existing panels
 - Layout safety validated during build or lint phase

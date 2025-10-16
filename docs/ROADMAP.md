@@ -36,7 +36,9 @@ This roadmap outlines practical, actionable tasks organized by HAI3's 10 core va
 ### Repository
 - [ ] Define the project repository layout
 - [ ] Define the config files layout with default values
-- [ ] Prepare the `docs/REPO_STRUCTURE.md` file
+- [ ] Prepare the `docs/REPO_STRUCTURE.md`
+- [ ] To allow to use UI-core library (as submodule, or installed package) inside a screenset repository
+- [ ] The HAI3 submodule/package can be updated independently at any time, screens development is not affected
 
 ### Screensets
 - [ ] Create a mechanism for screensets registration
