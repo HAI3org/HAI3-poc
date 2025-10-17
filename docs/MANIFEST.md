@@ -1,6 +1,8 @@
+> Document version - v0.1 - EARLY DRAFT, Oct-17 2026
+
 # HAI3 dev kit Manifest
 
-The purpose of this document is to define the core philosophy, principles, and values behind the HAI3 dev kit — a framework that merges AI-assisted UI generation with human craftsmanship, ensuring maintainable, scalable, and visually consistent applications for SaaS multitenant and multi-user control panels.
+The purpose of this document is to define the core philosophy, principles, and values behind the HAI3 dev kit - a framework that merges AI-assisted UI generation with human craftsmanship, ensuring maintainable, scalable, and visually consistent applications for SaaS multitenant and multi-user control panels.
 
 ## Key Principles
 
@@ -25,21 +27,24 @@ The HAI3 dev kit follows the Human-in-the-Loop Workflow philosophy:
 
 ## The HAI3 UI-Core Values
 
-### V#1 — Human-Configurable UI-Core
+### V#1 - Human-Configurable UI-Core - layout, styles, build
 
-HAI3 provides a unified UI-Core structure for all generated screens and allows developers to customize the layout, content, styles and observability settings according to specific UI application/control panel needs:
+HAI3 provides a unified UI-Core structure for all generated screens and allows developers to customize the layout, content, styles, build targets and observability settings according to specific UI application/control panel needs:
 
 - Configurable layout - menu structure, header, footer, and sidebar
 - Adaptable screen layouts (grid, form, dashboard, flow, etc.)
 - Consistent navigation and placement rules
 - Configurable observability and diagnostics (logging, tracing)
+- Configurable build targets - web, electron
+- Configurable build variants - cdn, local
 
 **Goal:** Enable AI and human developers to build within a shared layout system without layout drift.
 
-### V#2 — Layout-Safe Screen Generation
+### V#2 - Layout-Safe Screen Generation
 
 HAI3 ensures all generated screens fit into the defined panel layout.
 
+- Every screen has a screen schema that defines the layout and the content
 - UI-core library can be updated independently from the HAI3 repo at any time, screens development is not affected
 - Generated screens inherit layout templates
 - Generated screens do not break or overlap existing panels
@@ -47,7 +52,7 @@ HAI3 ensures all generated screens fit into the defined panel layout.
 
 **Goal:** Maintain visual integrity across auto-generated and manually crafted screens.
 
-### V#3 — Component and Style Consistency
+### V#3 - Component and Style Consistency
 
 All generated UI elements must align with existing UI-Core controls and styles.
 
@@ -59,9 +64,9 @@ All generated UI elements must align with existing UI-Core controls and styles.
 - Theme inheritance across AI-generated and human screens
 - AI-generated code must respect theme tokens and constraints
 
-**Goal:** Avoid design fragmentation — AI must behave like a trained team member reusing existing UI vocabulary maintaining consistent brand identity across all auto-generated screens.
+**Goal:** Avoid design fragmentation - AI must behave like a trained team member reusing existing UI vocabulary maintaining consistent brand identity across all auto-generated screens.
 
-### V#4 — Modular Screen Architecture with Pluggable UI Elements
+### V#4 - Modular Screen Architecture
 
 Every screen is a self-contained folder that can be shared, reused, or replaced.
 
@@ -70,25 +75,37 @@ Every screen is a self-contained folder that can be shared, reused, or replaced.
 - Developers can fork or duplicate screens to experiment with AI variants
 - Screen-sets can be switched at runtime for A/B testing or feature flags
 
-HAI3 provides a pluggable UI architecture that allows developers to reuse existing UI elements and components across different screens.
+**Goal:** Treat UI screens as composable building blocks - easy to swap, version, and evolve.
+
+### V#5 - Pluggable UI Microfrontends Architecture
+
+HAI3 provides a pluggable UI microfrontends architecture that allows developers to build marketplace-style plugin ecosystems where third-party developers can contribute screens and integrations without touching core code.
 
 - Predefined placeholders and slots for UI customization: menu/header/footer/sidebar/action bars
-- Runtime plugging of declarative UI elements - forms, grids, etc.
+- Runtime plugging of declarative UI elements - forms, grids, dashboards, etc.
 - Per-screenset UI component libraries for consistent design systems
 - Dynamic screen registration and lazy loading for performance
+- Shadow DOM encapsulation and scoped CSS for microfrontend isolation
+- Mandate all inter-microfrontend communication occur exclusively via explicit event bus APIs
+- Adopt strict Content Security Policies (CSP) and Trusted Types to prevent XSS and malicious injection
+- Provide separate local storage, IndexedDB namespaces, and in-memory caches per microfrontend
+- Sandboxed execution environment for third-party plugins
 
-**Goal:** Treat UI screens as composable building blocks — easy to swap, version, and evolve. Enables vendors to build marketplace-style plugin ecosystems where third-party developers can contribute screens and integrations without touching core code.
+**Goal:** Enable vendors to build secure, isolated plugin ecosystems where third-party developers can contribute screens and integrations without breaking other applications or compromising security.
 
-### V#6 – Shared Store and Global State
+### V#6 – Shared/Private Store and Global/Local State
 
-Maintain a predictable global state model across all screens.
+Maintain a predictable global/local state model across all screens.
 
+- Shared read-only state across screensets and individual screens
+- Private state per screenset and individual screens
 - Namespaces: ui, auth, entities, jobs, queries
 - Normalized entities with typed selectors
 - Persistence layers (memory → session → IndexedDB)
 - Event bus for inter-screen communication
 - Response caching strategies
 - Offline, Drafts & Background Sync support
+- LLM friendly state management
 
 **Goal:** Provide a consistent global state model for all screens and services.
 
@@ -131,15 +148,16 @@ HAI3 ensures that all AI-generated and human-refined screens meet accessibility 
 
 **Goal:** Ensure every screen produced by HAI3 is accessible, inclusive, and fully localizable across languages and regions. Global enterprises can deploy a single codebase to multiple regions with full localization support. Accessibility compliance reduces legal risk and expands market reach.
 
-### V#10 — Unified Build Targets
+### V#10 - Testing and Quality Gates
 
-HAI3 supports unified builds for both Web and Electron environments. The Web version has dual build with/without CDN
+HAI3 establishes a tiered, automated quality assurance pipeline that ensures all screens (whether AI-generated or human-crafted) meet enterprise standards for functionality, visual integrity, and accessibility.
 
-- Shared UI-Core between browser and desktop builds
-- Shared configuration for screen inclusion/exclusion
-- Ability to switch screen sets and themes at build time
-- Ability to build CDN or local server hosted version from the same source code
-- Support for on-premise deployments with air-gapped environments
-- Progressive Web App (PWA) support for offline-first scenarios
+- Provide unit/components tests (like Jest, Vitest) to validate business logic, component behavior, and state management
+- Visual Regression Tests (like Storybook, Percy, Chromatic) to prevent style drift across devices, themes, and screen sizes
+- End-to-End (E2E) Tests (like Cypress, Playwright) to simulate full user journeys including multitenancy switching, RBAC constraints, and complex workflows
+- Static Analysis for AI Output
+- Automated Accessibility Checks integration into CI pipeline to scan all screens for WCAG 2.1 AA compliance (color contrast, ARIA attributes, keyboard navigation)
+- Microfrontend Isolation Testing to verify sandbox boundaries, CSP enforcement, and inter-plugin communication contracts
+- Automated pre-commit hooks enforce linting, formatting, and basic validation
 
-**Goal:** Maintain one source of truth for multiple delivery environments. Service providers can offer flexible deployment options (cloud SaaS, on-premise, hybrid) from a single codebase. Desktop apps provide offline capabilities for field workers and secure environments.
+**Goal:** Shift quality left by providing immediate, actionable feedback to AI models and human developers. Ensure enterprise-grade quality, accessibility, and security compliance are baked in from the design stage, not retrofitted.

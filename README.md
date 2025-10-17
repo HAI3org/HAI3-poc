@@ -1,8 +1,8 @@
-# HAI3 — AI-Optimized UI Development Kit for Modern SaaS Applications
+# HAI3 - AI-Optimized UI Development Kit for Modern SaaS Applications
 
-**HAI3** is a **UI development kit** for modern SaaS applications — heavily optimized for **AI-driven UI generation** with minimal human assistance.
+**HAI3** is a **UI development kit** for modern SaaS applications - heavily optimized for **AI-driven UI generation** with minimal human assistance.
 
-It provides a structured, multi-layered framework that enables **AI systems and humans to collaborate** on building, evolving, and refining complex user interfaces — from drafts and mockups to production-ready screens.
+It provides a structured, multi-layered framework that enables **AI systems and humans to collaborate** on building, evolving, and refining complex user interfaces - from drafts and mockups to production-ready screens.
 
 ## Why HAI3?
 
@@ -47,7 +47,7 @@ With HAI3, UI development becomes a **three-layer process** where AI and humans 
 
 HAI3 provides the visual structure (menu, header, footer, sidebars, main view), defines source code layout conventions, microfrontend engine, customizable type system, and a screen-set switcher ensuring that generated screens reuse needed components libraries and visual styles. It also provides a structured prompting system and AI generation guide set that enables consistent, parameterized UI generation via LLMs.
 
-This approach enables **multi-repository**, **multi-persona**, and **AI-assisted** workflows — making it ideal for SaaS ecosystems that require rapid iteration, consistent design language, and integration with automated generation tools.
+This approach enables **multi-repository**, **multi-persona**, and **AI-assisted** workflows - making it ideal for SaaS ecosystems that require rapid iteration, consistent design language, and integration with automated generation tools.
 
 ---
 
@@ -55,20 +55,18 @@ This approach enables **multi-repository**, **multi-persona**, and **AI-assisted
 
 The HAI3 Dev Kit is built on top of the following key values below allowing it to be used for different usecases starting from a single desktop application to multitenant and mulit-user SaaS  control panel development:
 
-- V#1 - Human-Configurable UI-Core - layout, styles, components
-- V#2 - Layout-Safe Screen Generation - AI/Human code separation
-- V#3 — Component and Style Consistency - different screens use the same styles
-- V#4 — Theming & Branding Preservation - SaaS-friendly theming
-- V#5 — Modular Screen Architecture with Pluggable UI Elements - SaaS integraiton friendly
-- V#6 – Shared Store and Global State - performance and latency efficiency
-- V#7 – Unified API Layer - unified common middleware
-- V#8 - Security, Multitenancy & Role-based Access
-- V#9 - Internationalization & Localization
-- V#10 — Unified Build Targets (web, electron, local/CDN)
+- **V#1** - Human-Configurable UI-Core - layout, styles, build targets
+- **V#2** - Layout-Safe Screen Generation - AI/Human code separation
+- **V#3** - Component and Style Consistency - design system enforcement
+- **V#4** - Modular Screen Architecture - composable building blocks
+- **V#5** - Pluggable UI Microfrontends - secure plugin ecosystem
+- **V#6** – Shared/Private Store and Global/Local State - performance and offline-first
+- **V#7** – Unified API Layer - typed contracts and observability
+- **V#8** - Security, Multitenancy & Role-based Access - enterprise SSO and compliance
+- **V#9** - Internationalization & Localization - global deployment ready
+- **V#10** - Testing and Quality Gates - automated QA pipeline
 
----
-
-## Core Architecture
+See [MANIFEST.md](docs/MANIFEST.md) for detailed descriptions of each value.
 
 HAI3 is structured around **three main projections**, each addressing a critical dimension of the development lifecycle.
 
@@ -94,7 +92,7 @@ The UI Core is built to host **three categories of screen-sets**, corresponding 
 | **2. Mockups** | Semi-refined screens | Converted from drafts when human designers or PMs start refining visual and interaction details. |
 | **3. Production Screens** | Finalized versions | Human-polished mockups integrated into production builds. |
 
-Each category lives in its own folder and is accessible via the **screen-set switcher** — allowing instant preview or live toggling across versions directly in the UI.
+Each category lives in its own folder and is accessible via the **screen-set switcher** - allowing instant preview or live toggling across versions directly in the UI.
 
 ---
 
@@ -105,7 +103,7 @@ HAI3’s **UI Core** consists of three architectural layers designed for composa
 | Layer | Description |
 |--------|-------------|
 | **1. Presentation Layer** | Component library including buttons, grids, menus, modals, typography, and TailwindCSS-based style sets. |
-| **2. Layout Layer** | Defines the visual structure — menu, header, footer, right sidebar, popup window system, and screen containers. |
+| **2. Layout Layer** | Defines the visual structure - menu, header, footer, right sidebar, popup window system, and screen containers. |
 | **3. Libraries Layer** | Includes shared utilities: HTTP store, event system, plugin host, and microfrontend integration engine. |
 
 The combination of these layers allows developers to **compose UI experiences** from modular parts, shared repos, and AI-generated code.
@@ -170,13 +168,13 @@ HAI3-poc/
 ├── src/
 │   ├── components/
 │   │   ├── common/          # Shared UI-Core components
-│   │   │   ├── HAI3Core.tsx   # Main layout engine
-│   │   │   └── Modal.tsx      # Reusable modal component
+│   │   │   ├── HAI3Core.tsx # Main layout engine
+│   │   │   └── Modal.tsx    # Reusable modal component
 │   │   ├── screensets/      # Screen-set variants
 │   │   │   ├── _baseline/   # Minimal example
 │   │   │   ├── drafts/      # AI-generated drafts
 │   │   │   ├── mockups/     # Designer-refined mockups
-│   │   │   └── fullmix/     # Production screens
+│   │   │   └── production/     # Production screens
 │   │   ├── screensetConfig.ts  # Screen-set registry
 │   │   └── themeConfig.ts      # Theme system
 │   ├── styles/
@@ -184,10 +182,11 @@ HAI3-poc/
 │   └── types/
 │       └── global.d.ts      # TypeScript definitions
 ├── docs/
-│   ├── GUIDELINES.md     # AI generation guidelines
+│   ├── GUIDELINES.md        # AI generation guidelines
+│   ├── MANIFEST.md          # Core values and principles
+│   ├── ROADMAP.md           # Project roadmap
 │   └── pipeline.drawio.png  # Workflow diagram
-├── MANIFEST.md          # Core values and principles
-└── README.md            # This file
+└── README.md                # This file
 ```
 
 ### Creating a New Screen-Set
