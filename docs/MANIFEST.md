@@ -44,10 +44,9 @@ HAI3 provides a unified UI-Core structure for all generated screens and allows d
 
 HAI3 ensures all generated screens fit into the defined panel layout.
 
-- Every screen has a screen schema that defines the layout and the content
-- UI-core library can be updated independently from the HAI3 repo at any time, screens development is not affected
-- Generated screens inherit layout templates
-- Generated screens do not break or overlap existing panels
+- Every screen is built using reusable shared components (or components defined in the screen-set)
+- UI-core library can be updated independently from the HAI3 repo at any time (as git submodule or as component or as micro-frontend), screens development is not affected
+- Generated screens (or micro-frontends) do not break or overlap other screens or existing panels
 - Layout safety validated during build or lint phase
 
 **Goal:** Maintain visual integrity across auto-generated and manually crafted screens.
@@ -58,11 +57,11 @@ All generated UI elements must align with existing UI-Core controls and styles.
 
 - Use of standardized UI components (grids, buttons, modals, forms, etc.)
 - Auto-enforcement of existing CSS/Tailwind tokens and naming conventions
-- Lint rules ensure AI outputs conform to reusable design system components
+- Lint rules ensure AI outputs conform to reusable design system components (e.g. margins and paddings)
 - White-label support (logos, palettes, typography)
 - Support for color palettes, fonts, and logos
 - Theme inheritance across AI-generated and human screens
-- AI-generated code must respect theme tokens and constraints
+- AI-generated code must respect theme tokens and constraints (e.g. by rules and prompts)
 
 **Goal:** Avoid design fragmentation - AI must behave like a trained team member reusing existing UI vocabulary maintaining consistent brand identity across all auto-generated screens.
 
@@ -74,6 +73,7 @@ Every screen is a self-contained folder that can be shared, reused, or replaced.
 - Screens can be imported via Git submodules or copied manually
 - Developers can fork or duplicate screens to experiment with AI variants
 - Screen-sets can be switched at runtime for A/B testing or feature flags
+- Screen incapsulates it's own layout, logic and local screen state
 
 **Goal:** Treat UI screens as composable building blocks - easy to swap, version, and evolve.
 
@@ -90,6 +90,7 @@ HAI3 provides a pluggable UI microfrontends architecture that allows developers 
 - Adopt strict Content Security Policies (CSP) and Trusted Types to prevent XSS and malicious injection
 - Provide separate local storage, IndexedDB namespaces, and in-memory caches per microfrontend
 - Sandboxed execution environment for third-party plugins
+- Linter enforces strict style and structure rules for microfrontends
 
 **Goal:** Enable vendors to build secure, isolated plugin ecosystems where third-party developers can contribute screens and integrations without breaking other applications or compromising security.
 
